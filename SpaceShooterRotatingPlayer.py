@@ -62,14 +62,15 @@ ship.image = ship.originalImage
 ship.momentum = [0,0]
 
 
-lives = 300
+lives = 10
 score = 75
 fuelCost = 0.1
 healthCost = 40
-bulletSpeed = 13
-turningSpeed = 2
-maxSpeed = 15
+bulletSpeed = 22
+turningSpeed = 3
+maxSpeed = 20
 InertialDampener = False
+MachineGun = False
 Difficulty = 1
 
 momentum = [0,0]
@@ -187,7 +188,7 @@ while True:
                  
         max(ship.angle,0,360)
 
-    if (score > 0):
+    if (lives > 0 and score > 0):
         if pressed_keys[pygame.K_LSHIFT]:
                         
             rocket_loop.play(-1)
@@ -199,7 +200,7 @@ while True:
         
 
         elif (InertialDampener):
-            if (abs(ship.momentum[0] > 0) or abs(ship.momentum[1] > 0)):
+            if (lives > 0 and score > 0 and abs(ship.momentum[0] > 0) or abs(ship.momentum[1] > 0)):
                 rocket_loop.play(-1)
                 radian = math.radians(ship.angle)
                 ship.momentum[0] += -(ship.momentum[0] / 10)
@@ -255,7 +256,6 @@ while True:
             frames_until_next_meteor = 30
 
     for meteor in meteors:    
-
         if meteor.y < 0:
             meteor.y += abs(meteor.momentum[1])
             meteor.momentum[1] = -meteor.momentum[1]
@@ -322,13 +322,8 @@ while True:
                   
         for bullet in bullets:            
             if meteor_rect.colliderect(get_sprite_rectangle(bullet)):
-
-
                 if (not bullet.used):
-                    meteor_destroy.play()
-
-                
-
+                    meteor_destroy.play()              
                     meteor.hit = True
                     bullet.used = True
 
@@ -339,6 +334,7 @@ while True:
                
 
                     score += (math.sqrt(meteor.size) / 2) + 1
+                    Difficulty += 0.1
                 continue
         
     if (score > 100 + healthCost):
