@@ -16,7 +16,8 @@ ship_image = pygame.image.load("resources/ship/ship_forward.png").convert()
 ship_image = pygame.transform.scale(ship_image,(120,120))
            
 ship_image_destroyed = pygame.image.load("resources/ship/ship_forward_dead.png")
-           
+ship_image_destroyed = pygame.transform.scale(ship_image_destroyed,(120,120))
+
 bullet_image = pygame.image.load("resources/bullet/bullet_forward.png")
 bullet_image = pygame.transform.scale(bullet_image,(12,12))
                 
@@ -162,7 +163,7 @@ while True:
                 pygame.display.quit()
        
             if event.key == pygame.K_SPACE:
-                if (score >= 1 and lives > 0):
+                if (not MachineGun and score >= 1 and lives > 0):
                     score -= 1
                     fire_bullet()
 
@@ -172,14 +173,14 @@ while True:
             if event.key == pygame.K_LCTRL:
                 InertialDampener = not InertialDampener
                 rocket_loop.stop()
+            if event.key == pygame.K_LALT:
+                MachineGun = not MachineGun                
             
                 
 
-        pressed_keys = pygame.key.get_pressed()
+    pressed_keys = pygame.key.get_pressed()
 
-
-    if (lives > 0 and score > 0):      
-
+    if (lives > 0 and score > 0):  
         if pressed_keys[pygame.K_LEFT]:          
             ship.angle += turningSpeed   
 
@@ -209,6 +210,11 @@ while True:
                 score -= fuelCost * ((abs(ship.momentum[0] + abs(ship.momentum[1])/10)))  
             else:
                 rocket_loop.stop()
+
+    if pressed_keys[pygame.K_SPACE]:
+        if (MachineGun and score >= 1 and lives > 0):
+            score -= 1
+            fire_bullet()
 
         
 
@@ -244,6 +250,7 @@ while True:
     for bullet in bullets:
         bullet.x += bullet.momentum[0]
         bullet.y += bullet.momentum[1]
+        
         bullets = [bullet for bullet in bullets if bullet.x < window.get_width() and not bullet.used]
 
 
@@ -327,7 +334,7 @@ while True:
                     meteor.hit = True
                     bullet.used = True
 
-                    if ((meteor.size / 2) > 15):
+                    if ((meteor.size / 2) > 20):
                         add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2)
                         add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2)
 
@@ -385,16 +392,22 @@ while True:
     window.blit(score_text, score_text_pos)
 
     lives_text = font.render("LIVES: " + str(lives), 1, foreground)
-    lives_text_pos = score_text.get_rect()
+    lives_text_pos = lives_text.get_rect()
     lives_text_pos.right = window.get_width() - 4
     lives_text_pos.top = 30
     window.blit(lives_text, lives_text_pos)
 
     id_text = font.render("INERTIAL DAMPENERS: " + str(InertialDampener).upper(), 1, foreground)
-    id_text_pos = score_text.get_rect()
-    id_text_pos.right = window.get_width() - 185
+    id_text_pos = id_text.get_rect()
+    id_text_pos.right = window.get_width() - 4
     id_text_pos.top = 50
     window.blit(id_text, id_text_pos)
+
+    mg_text = font.render("MACHINE GUN: " + str(MachineGun).upper(), 1, foreground)
+    mg_text_pos = mg_text.get_rect()
+    mg_text_pos.right = window.get_width() - 4
+    mg_text_pos.top = 70
+    window.blit(mg_text, mg_text_pos)
     
 
     pygame.display.flip()
