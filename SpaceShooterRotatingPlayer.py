@@ -96,6 +96,7 @@ def fire_bullet():
     
     bullet.x = rect.centerx
     bullet.y = rect.centery
+    bullet.timer = 0
        
     bullet.used = False    
     bullets.append(bullet)
@@ -251,7 +252,24 @@ while True:
         bullet.x += bullet.momentum[0]
         bullet.y += bullet.momentum[1]
         
-        bullets = [bullet for bullet in bullets if bullet.x < window.get_width() and not bullet.used]
+        if bullet.y < 0:
+            bullet.y = window.get_height() - bullet.image.get_height()        
+        
+
+        if bullet.y > window.get_height() - bullet.image.get_height():
+            bullet.y = 0
+        
+
+        if bullet.x < 0:
+            bullet.x = window.get_width() - bullet.image.get_width()
+
+        if bullet.x > window.get_width() - bullet.image.get_width():
+            bullet.x = 0
+        
+
+        bullet.timer += 1
+
+        bullets = [bullet for bullet in bullets if not bullet.used and bullet.timer < 400]
 
 
     frames_until_next_meteor = frames_until_next_meteor - 1
