@@ -72,6 +72,8 @@ turningSpeed = 3
 maxSpeed = 20
 InertialDampener = False
 MachineGun = False
+ShipHeat = 10
+OverHeating = False
 Difficulty = 1
 
 momentum = [0,0]
@@ -85,6 +87,7 @@ frames_until_next_meteor = 0
 frames_until_next_star = 0
 
 def fire_bullet():
+    global ShipHeat
     shoot_sound.play()
     bullet = Sprite()
     radian = math.radians(ship.angle)            
@@ -96,9 +99,11 @@ def fire_bullet():
     
     bullet.x = rect.centerx
     bullet.y = rect.centery
+    bullet.timer = 0
        
     bullet.used = False    
     bullets.append(bullet)
+    ShipHeat += 1
 
 
 def add_meteor(image, x = 0, y = 0, size = -1):
@@ -163,7 +168,7 @@ while True:
                 pygame.display.quit()
        
             if event.key == pygame.K_SPACE:
-                if (not MachineGun and score >= 1 and lives > 0):
+                if (not MachineGun and score >= 1 and lives > 0 and not OverHeating):
                     score -= 1
                     fire_bullet()
 
@@ -180,16 +185,19 @@ while True:
 
     pressed_keys = pygame.key.get_pressed()
 
-    if (lives > 0 and score > 0):  
+    if (lives > 0 and score > 0 and not OverHeating):  
         if pressed_keys[pygame.K_LEFT]:          
-            ship.angle += turningSpeed   
+            ship.angle += turningSpeed 
+            ShipHeat += (fuelCost)   
 
         if pressed_keys[pygame.K_RIGHT]:        
             ship.angle -= turningSpeed
+            ShipHeat += (fuelCost) 
                  
+         
         max(ship.angle,0,360)
 
-    if (lives > 0 and score > 0):
+    if (lives > 0 and score > 0 and not OverHeating):
         if pressed_keys[pygame.K_LSHIFT]:
                         
             rocket_loop.play(-1)
@@ -197,22 +205,24 @@ while True:
             ship.momentum[0] += (math.cos(radian))
             ship.momentum[1] -= (math.sin(radian))           
                   
-            score -= fuelCost                    
+            score -= fuelCost        
+            ShipHeat += (fuelCost * 2)            
         
 
         elif (InertialDampener):
-            if (lives > 0 and score > 0 and abs(ship.momentum[0] > 0) or abs(ship.momentum[1] > 0)):
-                rocket_loop.play(-1)
+            if (lives > 0 and score > 0 and abs(ship.momentum[0]) > 0 or abs(ship.momentum[1]) > 0):
+                rocket_loop.play(2)
                 radian = math.radians(ship.angle)
                 ship.momentum[0] += -(ship.momentum[0] / 10)
                 ship.momentum[1] += -(ship.momentum[1] / 10)   
                            
-                score -= fuelCost * ((abs(ship.momentum[0] + abs(ship.momentum[1])/10)))  
+                score -= fuelCost * ((abs(ship.momentum[0] + abs(ship.momentum[1])/10)))
+                ShipHeat += (fuelCost * 2)    
             else:
                 rocket_loop.stop()
 
     if pressed_keys[pygame.K_SPACE]:
-        if (MachineGun and score >= 1 and lives > 0):
+        if (MachineGun and score >= 1 and lives > 0 and not OverHeating):
             score -= 1
             fire_bullet()
 
@@ -247,11 +257,41 @@ while True:
     if ship.x > window.get_width() - ship.image.get_width():
         ship.x = 0
 
+    if (ShipHeat > 0):
+        ShipHeat -= 0.1
+
+    if (ShipHeat > 100):
+        OverHeating = True
+    elif (ShipHeat < 1):
+        OverHeating = False
+
+
     for bullet in bullets:
         bullet.x += bullet.momentum[0]
         bullet.y += bullet.momentum[1]
         
-        bullets = [bullet for bullet in bullets if bullet.x < window.get_width() and not bullet.used]
+        if bullet.y < 0:
+            bullet.y = window.get_height() - bullet.image.get_height()        
+        
+
+        if bullet.y > window.get_height() - bullet.image.get_height():
+            bullet.y = 0
+        
+
+        if bullet.x < 0:
+            bullet.x = window.get_width() - bullet.image.get_width()
+
+        if bullet.x > window.get_width() - bullet.image.get_width():
+            bullet.x = 0
+        
+
+       
+       
+
+
+
+        bullet.timer += 1
+        bullets = [bullet for bullet in bullets if not bullet.used and bullet.timer < ((100 * Difficulty) / len(bullets))]
 
 
     frames_until_next_meteor = frames_until_next_meteor - 1
@@ -307,6 +347,14 @@ while True:
     ship_rect = get_sprite_rectangle(ship)
     
 
+    for bullet in bullets:
+        if (bullet.timer > 5):
+            bullet_rect = get_sprite_rectangle(bullet)
+            if bullet_rect.colliderect(ship_rect) and lives > 0:
+                bullet.used = True
+                lives = lives - 1
+
+
     for meteor in meteors:      
         meteor.image = rot_center(meteor.originalImage,meteor.angle)
 
@@ -320,7 +368,7 @@ while True:
             meteor.y = meteor.y - 6
             lives = lives - 1
             if lives == 0:
-                ship.x = ship.x - 50
+                #ship.x = ship.x - 50
                 ship.alpha = 255
             else:
                 ship.red = 255
@@ -397,16 +445,23 @@ while True:
     lives_text_pos.top = 30
     window.blit(lives_text, lives_text_pos)
 
+
+    heat_text = font.render("HEAT: " + '%03d' % ShipHeat + "/100", 1, foreground)
+    heat_text_pos = heat_text.get_rect()
+    heat_text_pos.right = window.get_width() - 4
+    heat_text_pos.top = 50
+    window.blit(heat_text, heat_text_pos)
+
     id_text = font.render("INERTIAL DAMPENERS: " + str(InertialDampener).upper(), 1, foreground)
     id_text_pos = id_text.get_rect()
     id_text_pos.right = window.get_width() - 4
-    id_text_pos.top = 50
+    id_text_pos.top = 70
     window.blit(id_text, id_text_pos)
 
     mg_text = font.render("MACHINE GUN: " + str(MachineGun).upper(), 1, foreground)
     mg_text_pos = mg_text.get_rect()
     mg_text_pos.right = window.get_width() - 4
-    mg_text_pos.top = 70
+    mg_text_pos.top = 90
     window.blit(mg_text, mg_text_pos)
     
 
