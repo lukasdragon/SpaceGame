@@ -206,15 +206,15 @@ while True:
             ship.momentum[1] -= (math.sin(radian))           
                   
             score -= fuelCost        
-            ShipHeat += (fuelCost * 2)            
+            ShipHeat += (fuelCost * 8)            
         
 
         elif (InertialDampener):
-            if (lives > 0 and score > 0 and abs(ship.momentum[0]) > 0 or abs(ship.momentum[1]) > 0):
+            if (lives > 0 and score > 0 and abs(ship.momentum[0]) > 0.01 or abs(ship.momentum[1]) > 0.01):
                 rocket_loop.play(2)
                 radian = math.radians(ship.angle)
-                ship.momentum[0] += -(ship.momentum[0] / 10)
-                ship.momentum[1] += -(ship.momentum[1] / 10)   
+                ship.momentum[0] += -(ship.momentum[0] / 5)
+                ship.momentum[1] += -(ship.momentum[1] / 5)   
                            
                 score -= fuelCost * ((abs(ship.momentum[0] + abs(ship.momentum[1])/10)))
                 ShipHeat += (fuelCost * 2)    
