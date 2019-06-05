@@ -282,13 +282,7 @@ while True:
             bullet.x = window.get_width() - bullet.image.get_width()
 
         if bullet.x > window.get_width() - bullet.image.get_width():
-            bullet.x = 0
-        
-
-       
-       
-
-
+            bullet.x = 0     
 
         bullet.timer += 1
         bullets = [bullet for bullet in bullets if not bullet.used and bullet.timer < ((100 * Difficulty) / len(bullets))]
@@ -326,7 +320,6 @@ while True:
       
 
 
-    #meteors = [meteor for meteor in meteors if meteor.x > - meteor.image.get_width() and not meteor.hit]
     meteors = [meteor for meteor in meteors if not meteor.hit]
 
 
@@ -382,7 +375,7 @@ while True:
                     meteor.hit = True
                     bullet.used = True
 
-                    if ((meteor.size / 2) > 20):
+                    if ((meteor.size / 2) > 30):
                         add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2)
                         add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2)
 
@@ -406,7 +399,7 @@ while True:
     for star in stars:
         display_sprite(star)
     
-           
+    ship.image = rot_center(ship.originalImage,ship.angle)
     if lives == 0:
         tmp = pygame.Surface(ship_image_destroyed.get_size(), pygame.SRCALPHA, 32)
         tmp.fill( (255, 255, 255, ship.alpha) )       
@@ -420,7 +413,7 @@ while True:
 
 
    
-    ship.image = rot_center(ship.originalImage,ship.angle)
+    
    
    
     display_sprite(ship)
