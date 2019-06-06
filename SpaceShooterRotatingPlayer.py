@@ -7,6 +7,7 @@ pygame.init()
 Clock = pygame.time.Clock()
 
 window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+display_width, display_height = pygame.display.get_surface().get_size()
 
 background = (0, 0, 0)
 font = pygame.font.Font(None, 24)
@@ -63,7 +64,7 @@ ship.image = ship.originalImage
 ship.momentum = [0,0]
 
 
-lives = 10
+lives = 1
 score = 75
 fuelCost = 0.1
 healthCost = 40
@@ -72,7 +73,7 @@ turningSpeed = 3
 maxSpeed = 20
 InertialDampener = False
 MachineGun = False
-ShipHeat = 10
+ShipHeat = 0
 OverHeating = False
 Difficulty = 1
 
@@ -106,7 +107,7 @@ def fire_bullet():
     ShipHeat += 1
 
 
-def add_meteor(image, x = 0, y = 0, size = -1):
+def add_meteor(image, x = 0, y = 0, size = -1, angle = -1):
     meteor = Sprite()
     meteor.momentum = [0,0]
     if (x == 0):
@@ -117,12 +118,16 @@ def add_meteor(image, x = 0, y = 0, size = -1):
         meteor.y = random.randrange(100, window.get_height() - 100)
     else:
         meteor.y = y
+        
     if (size == -1):
         meteor.size = random.randrange(10,200)
     else:
         meteor.size = size
 
-    meteor.angle = random.randrange(0,360)
+    if (angle == -1):
+        meteor.angle = random.randrange(0,360)
+    else:
+        meteor.angle = angle
     radian = math.radians(meteor.angle)   
 
     meteor.momentum[0] = math.cos(radian) * (((200 / meteor.size)))
@@ -282,13 +287,7 @@ while True:
             bullet.x = window.get_width() - bullet.image.get_width()
 
         if bullet.x > window.get_width() - bullet.image.get_width():
-            bullet.x = 0
-        
-
-       
-       
-
-
+            bullet.x = 0     
 
         bullet.timer += 1
         bullets = [bullet for bullet in bullets if not bullet.used and bullet.timer < ((100 * Difficulty) / len(bullets))]
@@ -326,7 +325,6 @@ while True:
       
 
 
-    #meteors = [meteor for meteor in meteors if meteor.x > - meteor.image.get_width() and not meteor.hit]
     meteors = [meteor for meteor in meteors if not meteor.hit]
 
 
@@ -353,6 +351,10 @@ while True:
             if bullet_rect.colliderect(ship_rect) and lives > 0:
                 bullet.used = True
                 lives = lives - 1
+                if lives == 0:
+                    ship.alpha = 255
+                else:
+                    ship.red = 255
 
 
     for meteor in meteors:      
@@ -368,11 +370,9 @@ while True:
             meteor.y = meteor.y - 6
             lives = lives - 1
             if lives == 0:
-                #ship.x = ship.x - 50
                 ship.alpha = 255
             else:
                 ship.red = 255
-            ship.red = 255
             continue
                   
         for bullet in bullets:            
@@ -382,12 +382,12 @@ while True:
                     meteor.hit = True
                     bullet.used = True
 
-                    if ((meteor.size / 2) > 20):
-                        add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2)
-                        add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2)
-
-               
-
+                    radian = math.acos(bullet.momentum[0] / bulletSpeed)
+                    angle = math.degrees(radian)
+                    if ((meteor.size / 2) > 30):
+                        add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2,angle + 10)
+                        add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2,angle - 10)
+             
                     score += (math.sqrt(meteor.size) / 2) + 1
                     Difficulty += 0.1
                 continue
@@ -406,7 +406,7 @@ while True:
     for star in stars:
         display_sprite(star)
     
-           
+    ship.image = rot_center(ship.originalImage,ship.angle)
     if lives == 0:
         tmp = pygame.Surface(ship_image_destroyed.get_size(), pygame.SRCALPHA, 32)
         tmp.fill( (255, 255, 255, ship.alpha) )       
@@ -420,7 +420,7 @@ while True:
 
 
    
-    ship.image = rot_center(ship.originalImage,ship.angle)
+
    
    
     display_sprite(ship)
@@ -433,36 +433,46 @@ while True:
     for meteor in meteors:
         display_sprite(meteor)
 
-    score_text = font.render("FUEL: " + str(int(score)), 1, foreground)
-    score_text_pos = score_text.get_rect()
-    score_text_pos.right = window.get_width() - 4
-    score_text_pos.top = 10
-    window.blit(score_text, score_text_pos)
-
-    lives_text = font.render("LIVES: " + str(lives), 1, foreground)
-    lives_text_pos = lives_text.get_rect()
-    lives_text_pos.right = window.get_width() - 4
-    lives_text_pos.top = 30
-    window.blit(lives_text, lives_text_pos)
 
 
-    heat_text = font.render("HEAT: " + '%03d' % ShipHeat + "/100", 1, foreground)
-    heat_text_pos = heat_text.get_rect()
-    heat_text_pos.right = window.get_width() - 4
-    heat_text_pos.top = 50
-    window.blit(heat_text, heat_text_pos)
+    if (lives <= 0):
+        largeText = pygame.font.Font('freesansbold.ttf',115)
+        TextSurf = font.render("Game Over...", True, (255,0,0))
+        TextRect = TextSurf.get_rect()
+        TextRect.center = ((display_width/2),(display_height/2))
+        window.blit(TextSurf, TextRect)
+    else:
+        score_text = font.render("FUEL: " + str(int(score)), 1, foreground)
+        score_text_pos = score_text.get_rect()
+        score_text_pos.right = window.get_width() - 4
+        score_text_pos.top = 10
+        window.blit(score_text, score_text_pos)
 
-    id_text = font.render("INERTIAL DAMPENERS: " + str(InertialDampener).upper(), 1, foreground)
-    id_text_pos = id_text.get_rect()
-    id_text_pos.right = window.get_width() - 4
-    id_text_pos.top = 70
-    window.blit(id_text, id_text_pos)
+        lives_text = font.render("LIVES: " + str(lives), 1, foreground)
+        lives_text_pos = lives_text.get_rect()
+        lives_text_pos.right = window.get_width() - 4
+        lives_text_pos.top = 30
+        window.blit(lives_text, lives_text_pos)
 
-    mg_text = font.render("MACHINE GUN: " + str(MachineGun).upper(), 1, foreground)
-    mg_text_pos = mg_text.get_rect()
-    mg_text_pos.right = window.get_width() - 4
-    mg_text_pos.top = 90
-    window.blit(mg_text, mg_text_pos)
+
+        heat_text = font.render("HEAT: " + '%03d' % ShipHeat + "/100", 1, foreground)
+        heat_text_pos = heat_text.get_rect()
+        heat_text_pos.right = window.get_width() - 4
+        heat_text_pos.top = 50
+        window.blit(heat_text, heat_text_pos)
+
+        id_text = font.render("INERTIAL DAMPENERS: " + str(InertialDampener).upper(), 1, foreground)
+        id_text_pos = id_text.get_rect()
+        id_text_pos.right = window.get_width() - 4
+        id_text_pos.top = 70
+        window.blit(id_text, id_text_pos)
+
+        mg_text = font.render("MACHINE GUN: " + str(MachineGun).upper(), 1, foreground)
+        mg_text_pos = mg_text.get_rect()
+        mg_text_pos.right = window.get_width() - 4
+        mg_text_pos.top = 90
+        window.blit(mg_text, mg_text_pos)
+    
     
 
     pygame.display.flip()
