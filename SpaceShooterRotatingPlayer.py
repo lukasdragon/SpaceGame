@@ -74,6 +74,7 @@ maxSpeed = 20
 InertialDampener = False
 MachineGun = False
 ShipHeat = 0
+ShipShield = 100
 OverHeating = False
 Difficulty = 1
 
@@ -86,6 +87,15 @@ stars = []
 
 frames_until_next_meteor = 0
 frames_until_next_star = 0
+
+
+def take_damage():
+    global lives, ShipShield
+    if (ShipShield > 99):
+        ShipShield = 0
+    else:
+        lives -= 1
+
 
 def fire_bullet():
     global ShipHeat
@@ -178,15 +188,13 @@ while True:
                     fire_bullet()
 
         elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_LSHIFT:
+            if event.key == pygame.K_LSHIFT or event.key == pygame.K_UP:
                 rocket_loop.stop()
             if event.key == pygame.K_LCTRL:
                 InertialDampener = not InertialDampener
                 rocket_loop.stop()
             if event.key == pygame.K_LALT:
-                MachineGun = not MachineGun                
-            
-                
+                MachineGun = not MachineGun             
 
     pressed_keys = pygame.key.get_pressed()
 
@@ -203,7 +211,7 @@ while True:
         max(ship.angle,0,360)
 
     if (lives > 0 and score > 0 and not OverHeating):
-        if pressed_keys[pygame.K_LSHIFT]:
+        if pressed_keys[pygame.K_LSHIFT] or pressed_keys[pygame.K_UP]:
                         
             rocket_loop.play(-1)
             radian = math.radians(ship.angle)
@@ -218,10 +226,10 @@ while True:
             if (lives > 0 and score > 0 and abs(ship.momentum[0]) > 0.01 or abs(ship.momentum[1]) > 0.01):
                 rocket_loop.play(2)
                 radian = math.radians(ship.angle)
-                ship.momentum[0] += -(ship.momentum[0] / 5)
-                ship.momentum[1] += -(ship.momentum[1] / 5)   
+                ship.momentum[0] += -(ship.momentum[0] / 100)
+                ship.momentum[1] += -(ship.momentum[1] / 100)   
                            
-                score -= fuelCost * ((abs(ship.momentum[0] + abs(ship.momentum[1])/10)))
+                score -= fuelCost * ((abs(ship.momentum[0]/10) + abs(ship.momentum[1]/10)))
                 ShipHeat += (fuelCost * 2)    
             else:
                 rocket_loop.stop()
@@ -263,7 +271,10 @@ while True:
         ship.x = 0
 
     if (ShipHeat > 0):
-        ShipHeat -= 0.1
+        ShipHeat -= 0.15
+
+    if (ShipShield < 100):
+        ShipShield += 0.05
 
     if (ShipHeat > 100):
         OverHeating = True
@@ -350,7 +361,7 @@ while True:
             bullet_rect = get_sprite_rectangle(bullet)
             if bullet_rect.colliderect(ship_rect) and lives > 0:
                 bullet.used = True
-                lives = lives - 1
+                take_damage()
                 if lives == 0:
                     ship.alpha = 255
                 else:
@@ -368,7 +379,7 @@ while True:
             meteor.hit = True
             meteor.x = meteor.x - 6
             meteor.y = meteor.y - 6
-            lives = lives - 1
+            take_damage()
             if lives == 0:
                 ship.alpha = 255
             else:
@@ -392,13 +403,13 @@ while True:
                     Difficulty += 0.1
                 continue
         
-    if (score > 100 + healthCost):
+    if (score > 80 + healthCost):
         lives += 1
         score -= healthCost
 
     if (score < 5 and lives > 1):
         score += healthCost - 5
-        lives -= 1   
+        take_damage()   
 
     
     window.fill(background)
@@ -417,23 +428,15 @@ while True:
         tmp.fill( (255, 255 - ship.red, 255 - ship.red, 255) )
         tmp.blit(ship.image, (0,0), ship.image.get_rect(), pygame.BLEND_RGBA_MULT)
         ship.image = tmp
-
-
+     
    
-
-   
-   
-    display_sprite(ship)
-  
-    
+    display_sprite(ship)    
 
     for bullet in bullets:
         display_sprite(bullet)
 
     for meteor in meteors:
         display_sprite(meteor)
-
-
 
     if (lives <= 0):
         largeText = pygame.font.Font('freesansbold.ttf',115)
@@ -454,23 +457,28 @@ while True:
         lives_text_pos.top = 30
         window.blit(lives_text, lives_text_pos)
 
+        shield_text = font.render("SHIELD: " + '%03d' % ShipShield + "%", 1, foreground)
+        shield_text_pos = shield_text.get_rect()
+        shield_text_pos.right = window.get_width() - 4
+        shield_text_pos.top = 50
+        window.blit(shield_text, shield_text_pos)
 
         heat_text = font.render("HEAT: " + '%03d' % ShipHeat + "/100", 1, foreground)
         heat_text_pos = heat_text.get_rect()
         heat_text_pos.right = window.get_width() - 4
-        heat_text_pos.top = 50
+        heat_text_pos.top = 70
         window.blit(heat_text, heat_text_pos)
 
         id_text = font.render("INERTIAL DAMPENERS: " + str(InertialDampener).upper(), 1, foreground)
         id_text_pos = id_text.get_rect()
         id_text_pos.right = window.get_width() - 4
-        id_text_pos.top = 70
+        id_text_pos.top = 90
         window.blit(id_text, id_text_pos)
 
         mg_text = font.render("MACHINE GUN: " + str(MachineGun).upper(), 1, foreground)
         mg_text_pos = mg_text.get_rect()
         mg_text_pos.right = window.get_width() - 4
-        mg_text_pos.top = 90
+        mg_text_pos.top = 110
         window.blit(mg_text, mg_text_pos)
     
     
