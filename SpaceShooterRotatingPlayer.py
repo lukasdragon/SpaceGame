@@ -72,7 +72,7 @@ turningSpeed = 3
 maxSpeed = 20
 InertialDampener = False
 MachineGun = False
-ShipHeat = 10
+ShipHeat = 0
 OverHeating = False
 Difficulty = 1
 
@@ -106,7 +106,7 @@ def fire_bullet():
     ShipHeat += 1
 
 
-def add_meteor(image, x = 0, y = 0, size = -1):
+def add_meteor(image, x = 0, y = 0, size = -1, angle = -1):
     meteor = Sprite()
     meteor.momentum = [0,0]
     if (x == 0):
@@ -117,12 +117,16 @@ def add_meteor(image, x = 0, y = 0, size = -1):
         meteor.y = random.randrange(100, window.get_height() - 100)
     else:
         meteor.y = y
+        
     if (size == -1):
         meteor.size = random.randrange(10,200)
     else:
         meteor.size = size
 
-    meteor.angle = random.randrange(0,360)
+    if (angle == -1):
+        meteor.angle = random.randrange(0,360)
+    else:
+        meteor.angle = angle
     radian = math.radians(meteor.angle)   
 
     meteor.momentum[0] = math.cos(radian) * (((200 / meteor.size)))
@@ -346,6 +350,10 @@ while True:
             if bullet_rect.colliderect(ship_rect) and lives > 0:
                 bullet.used = True
                 lives = lives - 1
+                if lives == 0:
+                    ship.alpha = 255
+                else:
+                    ship.red = 255
 
 
     for meteor in meteors:      
@@ -361,11 +369,9 @@ while True:
             meteor.y = meteor.y - 6
             lives = lives - 1
             if lives == 0:
-                #ship.x = ship.x - 50
                 ship.alpha = 255
             else:
                 ship.red = 255
-            ship.red = 255
             continue
                   
         for bullet in bullets:            
@@ -375,12 +381,12 @@ while True:
                     meteor.hit = True
                     bullet.used = True
 
+                    radian = math.acos(bullet.momentum[0] / bulletSpeed)
+                    angle = math.degrees(radian)
                     if ((meteor.size / 2) > 30):
-                        add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2)
-                        add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2)
-
-               
-
+                        add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2,angle + 10)
+                        add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2,angle - 10)
+             
                     score += (math.sqrt(meteor.size) / 2) + 1
                     Difficulty += 0.1
                 continue
@@ -413,7 +419,7 @@ while True:
 
 
    
-    
+
    
    
     display_sprite(ship)
