@@ -64,8 +64,8 @@ ship.image = ship.originalImage
 ship.momentum = [0,0]
 
 
-lives = 1
-score = 75
+lives = 2
+score = 100
 fuelCost = 0.1
 healthCost = 40
 bulletSpeed = 22
@@ -226,10 +226,10 @@ while True:
             if (lives > 0 and score > 0 and abs(ship.momentum[0]) > 0.01 or abs(ship.momentum[1]) > 0.01):
                 rocket_loop.play(2)
                 radian = math.radians(ship.angle)
-                ship.momentum[0] += -(ship.momentum[0] / 100)
-                ship.momentum[1] += -(ship.momentum[1] / 100)   
+                ship.momentum[0] += -(ship.momentum[0] / 50)
+                ship.momentum[1] += -(ship.momentum[1] / 50)   
                            
-                score -= fuelCost * ((abs(ship.momentum[0]/10) + abs(ship.momentum[1]/10)))
+                score -= fuelCost * ((abs(ship.momentum[0]/20) + abs(ship.momentum[1]/20)))
                 ShipHeat += (fuelCost * 2)    
             else:
                 rocket_loop.stop()
@@ -271,7 +271,7 @@ while True:
         ship.x = 0
 
     if (ShipHeat > 0):
-        ShipHeat -= 0.15
+        ShipHeat -= 0.20
 
     if (ShipShield < 100):
         ShipShield += 0.05
