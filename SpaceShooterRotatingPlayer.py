@@ -37,31 +37,49 @@ pygame.mixer.music.load("resources/audio/theme.ogg")
 pygame.mixer.music.play(-1)
                 
 class Sprite:
-    pass
+    spriteList = []    
 
+    def __init__(self,x,y,image, angle = 0, angleMom = 0, velocity = [0,0]):        
+        self.x = x
+        self.y = y
+        self.velocity = velocity
+        self.angle = angle
+        self.angleMom = angleMom
+        self.originalImage = image
+        self.rot_center(angle)
+        self.render = True
+        Sprite.spriteList.append(self)
+        
+        
+    def update(self):
+        self.x += self.velocity[0]
+        self.y += self.velocity[1]
+        self.angle += self.angleMom        
+        if (self.angle > 360):
+            self.angle -= 360
+        if (self.angle < 0):
+            self.angle += 360      
+        self.rot_center(self.angle)    
 
-def display_sprite(sprite):
-    window.blit(sprite.image, (sprite.x, sprite.y))
+    def display(self):
+        if (self.render):
+            window.blit(self.image, (self.x, self.y))
     
+    def get_rectangle(self):
+        return self.image.get_rect().move(self.x, self.y)
 
-def rot_center(image, angle):
-    orig_rect = image.get_rect()
-    rot_image = pygame.transform.rotate(image, angle)
-    rot_rect = orig_rect.copy()
-    rot_rect.center = rot_image.get_rect().center
-    rot_image = rot_image.subsurface(rot_rect).copy()
-    return rot_image
+    def rot_center(self, angle):
+        orig_rect = self.get_rectangle()
+        rot_image = pygame.transform.rotate(self.originalImage, angle)
+        rot_rect = orig_rect.copy()
+        rot_rect.center = rot_image.get_rect().center
+        rot_image = rot_image.subsurface(rot_rect).copy()
+        self.image = rot_image
 
 
-ship = Sprite()
-ship.x = 0
-ship.y = 0
-ship.angle = 0
+ship = Sprite(0,0,ship_image)
 ship.red = 0
 ship.alpha = 0
-ship.originalImage = ship_image
-ship.image = ship.originalImage
-ship.momentum = [0,0]
 
 
 lives = 2
@@ -77,8 +95,6 @@ ShipHeat = 0
 ShipShield = 100
 OverHeating = False
 Difficulty = 1
-
-momentum = [0,0]
 
 bullets = []
 meteors = []
@@ -100,16 +116,12 @@ def take_damage():
 def fire_bullet():
     global ShipHeat
     shoot_sound.play()
-    bullet = Sprite()
-    radian = math.radians(ship.angle)            
-    bullet.momentum = [(math.cos(radian)) * bulletSpeed,(-math.sin(radian)) * bulletSpeed]
+    rect = ship.get_rectangle()
 
-    bullet.image = rot_center(bullet_image,ship.angle)
-    rect = get_sprite_rectangle(ship)
-    
-    
-    bullet.x = rect.centerx
-    bullet.y = rect.centery
+    bullet = Sprite(rect.centerx,rect.centery,bullet_image,ship.angle)
+    radian = math.radians(ship.angle)            
+    bullet.velocity = [(math.cos(radian)) * bulletSpeed,(-math.sin(radian)) * bulletSpeed]
+              
     bullet.timer = 0
        
     bullet.used = False    
@@ -118,8 +130,7 @@ def fire_bullet():
 
 
 def add_meteor(image, x = 0, y = 0, size = -1, angle = -1):
-    meteor = Sprite()
-    meteor.momentum = [0,0]
+    meteor = Sprite()    
     if (x == 0):
         meteor.x = window.get_width()
     else:
@@ -140,8 +151,8 @@ def add_meteor(image, x = 0, y = 0, size = -1, angle = -1):
         meteor.angle = angle
     radian = math.radians(meteor.angle)   
 
-    meteor.momentum[0] = math.cos(radian) * (((200 / meteor.size)))
-    meteor.momentum[1] = -math.sin(radian) * (((200 / meteor.size)))
+    meteor.velocity[0] = math.cos(radian) * (((200 / meteor.size)))
+    meteor.velocity[1] = -math.sin(radian) * (((200 / meteor.size)))
 
     meteor.rotDirection = random.randrange(1,2)
     if meteor.rotDirection > 1:
@@ -153,18 +164,12 @@ def add_meteor(image, x = 0, y = 0, size = -1, angle = -1):
 
 
 def add_star(xPos):
-    star = Sprite()
-    star.x = xPos
-    star.y = random.randrange(10, window.get_height() - 10)
     star_size = random.randrange(1, 4)
-    star.image = pygame.Surface((star_size, star_size))
-   
-    star.image.fill((255, 255, 255))    
+    image = pygame.Surface((star_size, star_size))
+    image.fill((255, 255, 255))   
+    star = Sprite(xPos,random.randrange(10, window.get_height() - 10),image)    
+
     stars.append(star)
-
-def get_sprite_rectangle(sprite):
-    return sprite.image.get_rect().move(sprite.x, sprite.y)
-
 
 for x in range(25):    
     add_star(random.randrange(1,window.get_width()))
@@ -215,21 +220,21 @@ while True:
                         
             rocket_loop.play(-1)
             radian = math.radians(ship.angle)
-            ship.momentum[0] += (math.cos(radian))
-            ship.momentum[1] -= (math.sin(radian))           
+            ship.velocity[0] += (math.cos(radian))
+            ship.velocity[1] -= (math.sin(radian))           
                   
             score -= fuelCost        
             ShipHeat += (fuelCost * 8)            
         
 
         elif (InertialDampener):
-            if (lives > 0 and score > 0 and abs(ship.momentum[0]) > 0.01 or abs(ship.momentum[1]) > 0.01):
+            if (lives > 0 and score > 0 and abs(ship.velocity[0]) > 0.01 or abs(ship.velocity[1]) > 0.01):
                 rocket_loop.play(2)
                 radian = math.radians(ship.angle)
-                ship.momentum[0] += -(ship.momentum[0] / 50)
-                ship.momentum[1] += -(ship.momentum[1] / 50)   
+                ship.velocity[0] += -(ship.velocity[0] / 50)
+                ship.velocity[1] += -(ship.velocity[1] / 50)   
                            
-                score -= fuelCost * ((abs(ship.momentum[0]/20) + abs(ship.momentum[1]/20)))
+                score -= fuelCost * ((abs(ship.velocity[0]/20) + abs(ship.velocity[1]/20)))
                 ShipHeat += (fuelCost * 2)    
             else:
                 rocket_loop.stop()
@@ -243,18 +248,18 @@ while True:
 
 
 
-    if (ship.momentum[0] > maxSpeed):
-        ship.momentum[0] = maxSpeed
-    if (ship.momentum[0] < -maxSpeed):
-        ship.momentum[0] = -maxSpeed
+    if (ship.velocity[0] > maxSpeed):
+        ship.velocity[0] = maxSpeed
+    if (ship.velocity[0] < -maxSpeed):
+        ship.velocity[0] = -maxSpeed
 
-    if (ship.momentum[1] > maxSpeed):
-        ship.momentum[1] = maxSpeed
-    if (ship.momentum[1] < -maxSpeed):
-        ship.momentum[1] = -maxSpeed
+    if (ship.velocity[1] > maxSpeed):
+        ship.velocity[1] = maxSpeed
+    if (ship.velocity[1] < -maxSpeed):
+        ship.velocity[1] = -maxSpeed
 
-    ship.x = ship.x + (ship.momentum[0] / 2)
-    ship.y = ship.y + (ship.momentum[1] / 2)
+    ship.x = ship.x + (ship.velocity[0] / 2)
+    ship.y = ship.y + (ship.velocity[1] / 2)
 
     if ship.y < 0:
         ship.y = window.get_height() - ship.image.get_height()        
@@ -283,8 +288,8 @@ while True:
 
 
     for bullet in bullets:
-        bullet.x += bullet.momentum[0]
-        bullet.y += bullet.momentum[1]
+        bullet.x += bullet.velocity[0]
+        bullet.y += bullet.velocity[1]
         
         if bullet.y < 0:
             bullet.y = window.get_height() - bullet.image.get_height()        
@@ -314,25 +319,25 @@ while True:
 
     for meteor in meteors:    
         if meteor.y < 0:
-            meteor.y += abs(meteor.momentum[1])
-            meteor.momentum[1] = -meteor.momentum[1]
+            meteor.y += abs(meteor.velocity[1])
+            meteor.velocity[1] = -meteor.velocity[1]
         
 
         if meteor.y > window.get_height() - meteor.image.get_height():
-            meteor.y += -abs(meteor.momentum[1])
-            meteor.momentum[1] = -meteor.momentum[1]
+            meteor.y += -abs(meteor.velocity[1])
+            meteor.velocity[1] = -meteor.velocity[1]
 
         if meteor.x < 0:
-            meteor.x += abs(meteor.momentum[0])
-            meteor.momentum[0] = -meteor.momentum[0]
+            meteor.x += abs(meteor.velocity[0])
+            meteor.velocity[0] = -meteor.velocity[0]
 
         if meteor.x > window.get_width() - meteor.image.get_width():
-            meteor.x += -abs(meteor.momentum[0])
-            meteor.momentum[0] = -meteor.momentum[0]
+            meteor.x += -abs(meteor.velocity[0])
+            meteor.velocity[0] = -meteor.velocity[0]
 
 
-        meteor.x += meteor.momentum[0]
-        meteor.y += meteor.momentum[1]
+        meteor.x += meteor.velocity[0]
+        meteor.y += meteor.velocity[1]
       
 
 
@@ -353,12 +358,12 @@ while True:
         
     ship.red = max(0, ship.red - 50)
     ship.alpha = max(0, ship.alpha - 2)
-    ship_rect = get_sprite_rectangle(ship)
+    ship_rect = ship.get_rectangle()
     
 
     for bullet in bullets:
         if (bullet.timer > 5):
-            bullet_rect = get_sprite_rectangle(bullet)
+            bullet_rect = bullet.get_rectangle()
             if bullet_rect.colliderect(ship_rect) and lives > 0:
                 bullet.used = True
                 take_damage()
@@ -368,13 +373,9 @@ while True:
                     ship.red = 255
 
 
-    for meteor in meteors:      
-        meteor.image = rot_center(meteor.originalImage,meteor.angle)
-
-        meteor.angle += ((200 / meteor.size)) * meteor.rotDirection
-        max(meteor.angle,0,360)
-
-        meteor_rect = get_sprite_rectangle(meteor)
+    for meteor in meteors:    
+       
+        meteor_rect = meteor.get_rectangle()
         if meteor_rect.colliderect(ship_rect) and lives > 0:
             meteor.hit = True
             meteor.x = meteor.x - 6
@@ -387,13 +388,13 @@ while True:
             continue
                   
         for bullet in bullets:            
-            if meteor_rect.colliderect(get_sprite_rectangle(bullet)):
+            if meteor_rect.colliderect(bullet.get_rectangle()):
                 if (not bullet.used):
                     meteor_destroy.play()              
                     meteor.hit = True
                     bullet.used = True
 
-                    radian = math.acos(bullet.momentum[0] / bulletSpeed)
+                    radian = math.acos(bullet.velocity[0] / bulletSpeed)
                     angle = math.degrees(radian)
                     if ((meteor.size / 2) > 30):
                         add_meteor(meteor.originalImage,meteor.x,meteor.y,meteor.size / 2,angle + 10)
@@ -415,14 +416,13 @@ while True:
     window.fill(background)
 
     for star in stars:
-        display_sprite(star)
-    
-    ship.image = rot_center(ship.originalImage,ship.angle)
+        star.display()
+    ship.rot_center(ship.angle)    
     if lives == 0:
         tmp = pygame.Surface(ship_image_destroyed.get_size(), pygame.SRCALPHA, 32)
         tmp.fill( (255, 255, 255, ship.alpha) )       
         tmp.blit(ship_image_destroyed, (0,0), ship_image_destroyed.get_rect(), pygame.BLEND_RGBA_MULT)
-        ship.image = rot_center(tmp, ship.angle)
+        ship.rot_center(ship.angle)
     if ship.red > 0:
         tmp = pygame.Surface(ship.image.get_size(), pygame.SRCALPHA, 32)
         tmp.fill( (255, 255 - ship.red, 255 - ship.red, 255) )
@@ -430,13 +430,13 @@ while True:
         ship.image = tmp
      
    
-    display_sprite(ship)    
+    ship.display()
 
     for bullet in bullets:
-        display_sprite(bullet)
+        bullet.display()
 
     for meteor in meteors:
-        display_sprite(meteor)
+        meteor.display()
 
     if (lives <= 0):
         largeText = pygame.font.Font('freesansbold.ttf',115)
